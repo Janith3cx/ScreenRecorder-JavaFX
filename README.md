@@ -18,7 +18,7 @@ A screen recorder application built using Java and JavaFX. This project is curre
 
 1. Clone the repository:
    
-   git clone https://github.com/your-username/screen-recorder.git
+   git clone https://github.com/janith3cx/ScreenRecorder-JavaFX.git
    cd screen-recorder
    
 Set up your development environment to use Java and JavaFX. You can follow the instructions from the JavaFX Documentation.
