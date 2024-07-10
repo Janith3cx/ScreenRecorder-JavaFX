@@ -37,21 +37,34 @@ public class HandleRecord {
 	public Boolean startRecord() {
 		
 		 running = true;
-		 new Thread(this::startRecord).start();
 		 new Thread(() -> {
 			try {
-				processImages();
-			} catch (IOException e) {
+				screenCapture();
+			} catch (AWTException | IOException | InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}).start();
+		 new Thread(() -> {
+			
+				
+				try {
+					processImages();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			
+		}).start();
 		 return running;
 	}
 	
-	public Boolean stopRecord() {
+	public Boolean stopRecord() throws IOException {
+		
 		
 		return running = false;
+		
+		
 	}
 
 	public void screenCapture() throws AWTException, IOException, InterruptedException {
@@ -73,7 +86,7 @@ public class HandleRecord {
 				long endTime = System.currentTimeMillis();
 				long sleepTime = frameTime - (endTime-startTime);
 				
-				if(sleepTime<0) {
+				if(sleepTime>0) {
 					Thread.sleep(sleepTime);
 				}
 				System.out.println("cpatured count "+count);
