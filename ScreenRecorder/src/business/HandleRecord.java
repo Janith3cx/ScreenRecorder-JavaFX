@@ -32,7 +32,7 @@ public class HandleRecord {
 	private final BlockingQueue<BufferedImage> imageQueue = new LinkedBlockingQueue<>();
 	private File tempFile;
 	
-	private static final int TARGET_FPS = 30;
+	private static final int TARGET_FPS = 12;
 
 	public Boolean startRecord() {
 		
@@ -53,6 +53,9 @@ public class HandleRecord {
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			
 		}).start();
@@ -69,31 +72,33 @@ public class HandleRecord {
 
 	public void screenCapture() throws AWTException, IOException, InterruptedException {
 
-		Rectangle screenRect = new Rectangle( Toolkit.getDefaultToolkit().getScreenSize());
+		Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
 		Robot rbt = new Robot();
 		long frameTime = 1000/TARGET_FPS;
 
 		System.out.println("cpatured the screen");
-
+		System.out.println("frame time " + frameTime);
 
 
 		int count = 0;
 
-			while(running) {
-				long startTime = System.currentTimeMillis();
-				BufferedImage image = rbt.createScreenCapture(screenRect);
-				imageQueue.put(image);
-				long endTime = System.currentTimeMillis();
-				long sleepTime = frameTime - (endTime-startTime);
-				
-				if(sleepTime>0) {
-					Thread.sleep(sleepTime);
-				}
-				System.out.println("cpatured count "+count);
+		 while (running) {
+	            long startTime = System.currentTimeMillis();
+	            BufferedImage image = rbt.createScreenCapture(screenRect);
+	            imageQueue.put(image);
+	            long endTime = System.currentTimeMillis();
+	            long sleepTime = frameTime - (endTime - startTime);
 
+	            if (sleepTime > 0) {
+	                Thread.sleep(sleepTime); 
+	            }
+	            System.out.println("captured count " + count);
+	            System.out.println("start time " + startTime);
+	            System.out.println("end time " + endTime);
+	            System.out.println("sleep time " + sleepTime);
 
-				count++;
-			}
+	            count++;
+	        }
 
 			System.out.println("cpatured running" + running);
 			
@@ -102,25 +107,37 @@ public class HandleRecord {
 	}
 
 
-	public void  processImages() throws IOException{
+	public void  processImages() throws IOException, InterruptedException{
 
 		tempFile = File.createTempFile("tempVideo", ".mp4");
 		
 		AWTSequenceEncoder sequenceEncoder = AWTSequenceEncoder.createSequenceEncoder(tempFile, TARGET_FPS);
 			
-			while(running || !imageQueue.isEmpty()) {
+			
 				
-				BufferedImage image = imageQueue.poll();
+			
+			
+			try {
 				
-				if(image !=null) {
+				while(running || !imageQueue.isEmpty()) {
 					
-					sequenceEncoder.encodeImage(image);
+					BufferedImage image = imageQueue.take();
+					
+					if(image !=null) {
+					
+						sequenceEncoder.encodeImage(image);
+					}
 				}
+			}finally {
+				
+				sequenceEncoder.finish();
+			}
+				
 			
 			
-			sequenceEncoder.finish();
 			
-		}
+			
+		
 		
 	}
 	
