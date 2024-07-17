@@ -6,100 +6,185 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import business.HandleRecord;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class ScreenRecordController implements ScreenRecordInterface{
 
+	private HandleRecord handleRecord = new HandleRecord();
+	private Stage stage;
+	
 	@FXML
-	private Button playButton;
+	private AnchorPane recordController;
+//	@FXML
+//	private AnchorPane mainPane;
+	
 	@FXML
-	private Button pauseButton;
+	private Button recordingButton;
+	@FXML
+	private Button recordStopButton;
 
 	
-	@FXML 
-	private AnchorPane recordController;
+	
+	@FXML
+	private ImageView imageViewRecord;
+	@FXML
+	private ImageView imageViewStop;
+
+	
+	
+	
+	
 	
 	private double initX;
 	private double initY;
 	
 
-	@FXML
-	private ImageView imageViewPlay;
-	@FXML
-	private ImageView imageViewPause;
-
-	private HandleRecord handleRecord = new HandleRecord();
-	private Stage stage;
+	
 
 	@Override
 	@FXML
-	public void onClickPlay(ActionEvent event) {
+	public void onClickToRecordStart(ActionEvent event) throws IOException {
 
-		playButton.setVisible(false);
-		pauseButton.setVisible(true);
+		try {
+			handleRecord.startRecord();
+		} catch (AWTException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
+		Stage primaryStage = (Stage) recordingButton.getScene().getWindow();
+		primaryStage.close();
+		
+		handleRecord.loadedRecorderPane();
 		
 		
-		handleRecord.startRecord();
 		
 	
-		System.out.println("Play Button is clicked");
+		System.out.println("start button is clicked");
 	}
 
 	@Override
-	public Button getPlayButton() {
+	@FXML
+	public Button getRecordingButton() {
 
-		return playButton;
+		return recordingButton;
 
 	}
 
 	@Override
-	public ImageView getImageViewPlay() {
+	@FXML
+	public ImageView getImageViewRecord() {
 
-		return imageViewPlay;
+		return imageViewRecord;
 
 	}
 
 
 	@Override
 	@FXML
-	public void onClickPause(ActionEvent event) throws AWTException, IOException, InterruptedException {
+	public void onClickToRecordStop() {
 
-		pauseButton.setVisible(false);
-		playButton.setVisible(true);
-
+		try {	
+			handleRecord.stopRecord();
 		
-		handleRecord.stopRecord();
+		
+		Platform.runLater(()->{
+			
+			Stage primaryStage = (Stage) recordStopButton.getScene().getWindow();
+			primaryStage.close();
+			
+			
+			try {
+				Thread.sleep(100);
+				Stage mainAnchor = new Stage();
+				Image icon = new Image("/resources/assets/images/J.png");
+				Parent mainPane;
+			
+			
+				mainPane = FXMLLoader.load(getClass().getResource("/resources/application/RecordScene.fxml"));
+				mainAnchor.getIcons().add(icon);
+				mainAnchor.setTitle("Screen Recorder");
+				mainAnchor.setScene(new Scene(mainPane));
+				mainAnchor.show();
+			} catch (IOException | InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			
+		});
+			
+		}finally {
+			
+			String fixedPath = "D:\\Example Screen Videos";
+			FileChooser fileChooser = new FileChooser();
+			fileChooser.setTitle("Save Video File");
+			fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("MP4 Files", ".mp4"));
+			
+			File initialPath = new File(fixedPath);
+			fileChooser.setInitialDirectory(initialPath);
+			
+
+			File file = fileChooser.showSaveDialog(new Stage());
+			
+			
+			 if (file != null) {
+			       
+			        handleRecord.saveRecording(file);
+			        System.out.println("File saved: " + file.getAbsolutePath());
+			    }else {
+			        
+			        System.out.println("Save action cancelled.");
+			    }
+		}
+		
+		
 				
 
-		System.out.println("Pause Button is clicked");
+		System.out.println("stop button is clicked");
 	}
 
 	@Override
-	public Button getPauseButton() {
+	@FXML
+	public Button getRecordStopButton() {
 
-		return pauseButton;
+		return recordStopButton;
 	}
 
 	@Override
-	public ImageView getImageViewPause() {
+	@FXML
+	public ImageView getImageViewStop() {
 
-		return imageViewPause;
+		return imageViewStop;
 	}
 	
 	@Override
 	@FXML
 	public void onClickOpen(ActionEvent event) throws IOException {
 		
-		handleRecord.loadedRecorderPane();
+		
 		
 	}
 	
@@ -107,29 +192,20 @@ public class ScreenRecordController implements ScreenRecordInterface{
 	@FXML
 	public void onClickSave() {
 		
-		FileChooser fileChooser = new FileChooser();
-		fileChooser.setTitle("Save Video File");
-		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("MP4 Files", ".mp4"));
-		File file = fileChooser.showSaveDialog(new Stage());
-		
-		
-		if(file !=null) {
 			
-			handleRecord.saveRecording(file);
-		}
+		
 	}
 
 	@Override
 	@FXML
 	public Button getOpenController(ActionEvent event) {
-		// TODO Auto-generated method stub
+		
 		return null;
 	}
 	
 	
 	public void setStage(Stage stage)  {
 		
-//		handleRecord.loadedRecorderPane();
 		this.stage = stage;
 	}
 
@@ -169,6 +245,9 @@ public class ScreenRecordController implements ScreenRecordInterface{
 		
 	}
 
+
+
+	
 	
 
 	

@@ -10,12 +10,13 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
 public interface ScreenRecordInterface {
 	
-	void onClickPlay(ActionEvent event);
-	void onClickPause(ActionEvent event) throws AWTException, IOException, InterruptedException;
+	void onClickToRecordStart(ActionEvent event) throws IOException;
+	void onClickToRecordStop() throws IOException;
 	void onClickOpen(ActionEvent event) throws IOException;
 	void onClickSave();
 	void handleMousePressed(MouseEvent event);
@@ -23,12 +24,16 @@ public interface ScreenRecordInterface {
 	void setStage(Stage stage);
 	
 	
-	Button getPlayButton();
-	Button getPauseButton();
+	Button getRecordingButton();
+	Button getRecordStopButton();
 	Button getOpenController(ActionEvent event);
 	
-	ImageView getImageViewPlay();
-	ImageView getImageViewPause();
+	
+	ImageView getImageViewRecord();
+	ImageView getImageViewStop();
+	
+	
+
 	
 	
 	

@@ -9,8 +9,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.jcodec.api.awt.AWTSequenceEncoder;
@@ -19,6 +21,7 @@ import controller.ScreenRecordController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -28,128 +31,172 @@ import javafx.stage.StageStyle;
 
 public class HandleRecord {
 
-	private volatile Boolean running;
-	private final BlockingQueue<BufferedImage> imageQueue = new LinkedBlockingQueue<>();
-	private File tempFile;
 	
-	private static final int TARGET_FPS = 12;
+	private static volatile Boolean running;
+	
+	private final BlockingQueue<BufferedImage> imageQueue = new LinkedBlockingQueue<>();
+	private static File tempFile;
+	
+	private static final int TARGET_FPS = 10;
+	
+	
+	private static Thread recordingThread;
+	private static Thread processingThread;
 
-	public Boolean startRecord() {
+	private File desti = new File("D:\\Example Screen Videos\\video.mp4");
+	
+	public void startRecord() throws AWTException , IOException , InterruptedException {
 		
-		 running = true;
-		 new Thread(() -> {
+			
+			running = true;
+		
+			new Thread(() -> {
 			try {
 				screenCapture();
-			} catch (AWTException | IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
+			} catch (AWTException | InterruptedException e) {
 				e.printStackTrace();
 			}
-		}).start();
-		 new Thread(() -> {
+		}).start();;
+		
+		
+			new Thread(() -> {
+			try {
+				processImages();
+			} catch (IOException | InterruptedException e) {
+				e.printStackTrace();
+			}
+		}).start();;
+		 
+//			recordingThread.start();
+//			processingThread.start();
 			
-				
-				try {
-					processImages();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			System.out.println( "recording thread in start methoad "+recordingThread+"\n"+"processing thread in start methoad "+processingThread);
 			
-		}).start();
-		 return running;
 	}
 	
-	public Boolean stopRecord() throws IOException {
+	public void stopRecord() {
 		
-		
-		return running = false;
-		
+			running = false;
+			
+			 
+			System.out.println("stop record clicked 1 " + running);
+	
+			System.out.println( "recording thread in stop methoad "+recordingThread+"\n"+"processing thread in stop methoad "+processingThread);
 		
 	}
 
-	public void screenCapture() throws AWTException, IOException, InterruptedException {
+	public void screenCapture() throws AWTException, InterruptedException {
 
 		Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
-		Robot rbt = new Robot();
+		
 		long frameTime = 1000/TARGET_FPS;
 
 		System.out.println("cpatured the screen");
-		System.out.println("frame time " + frameTime);
+//		System.out.println("frame time " + frameTime);
 
 
 		int count = 0;
 
 		 while (running) {
-	            long startTime = System.currentTimeMillis();
-	            BufferedImage image = rbt.createScreenCapture(screenRect);
-	            imageQueue.put(image);
+			
+			Robot rbt = new Robot();
+			BufferedImage image = rbt.createScreenCapture(screenRect);
+			 	
+			 	long startTime = System.currentTimeMillis();
+			       imageQueue.put(image);
+			     
+//				System.out.println("in the screen " + running);
+	           
 	            long endTime = System.currentTimeMillis();
 	            long sleepTime = frameTime - (endTime - startTime);
+	            
+	            
 
-	            if (sleepTime > 0) {
-	                Thread.sleep(sleepTime); 
+	            if (sleepTime < 0) {
+	                
+	                    Thread.sleep(sleepTime);
+	                
 	            }
 	            System.out.println("captured count " + count);
-	            System.out.println("start time " + startTime);
-	            System.out.println("end time " + endTime);
-	            System.out.println("sleep time " + sleepTime);
+//	            System.out.println("start time " + startTime);
+//	            System.out.println("end time " + endTime);
+//	            System.out.println("sleep time " + sleepTime);
 
 	            count++;
 	        }
+		 
+		
 
-			System.out.println("cpatured running" + running);
+
+//			System.out.println("cpatured running" + running);
 			
 
 
 	}
 
 
-	public void  processImages() throws IOException, InterruptedException{
+	@SuppressWarnings("unused")
+	public void  processImages() throws IOException, InterruptedException {
 
+		
 		tempFile = File.createTempFile("tempVideo", ".mp4");
 		
 		AWTSequenceEncoder sequenceEncoder = AWTSequenceEncoder.createSequenceEncoder(tempFile, TARGET_FPS);
 			
-			
+			try {	
+				int count = 0;
+				while(running) {
+					
+						BufferedImage image = imageQueue.take();
+                       
+						if(image !=null) {
+							
+								sequenceEncoder.encodeImage(image);
+						}
+						
+//						System.out.println("image " + image);
+
+
+						
 				
-			
-			
-			try {
-				
-				while(running || !imageQueue.isEmpty()) {
 					
-					BufferedImage image = imageQueue.take();
+//					System.out.println(Thread.currentThread().getName() + " is running");
 					
-					if(image !=null) {
 					
-						sequenceEncoder.encodeImage(image);
-					}
+					System.out.println("image processing " + count);
+					
+					count++;
 				}
+				
+			
 			}finally {
 				
-				sequenceEncoder.finish();
-			}
+				 if (sequenceEncoder != null) {
+		                sequenceEncoder.finish();
+		                
+		                System.out.println("encoder is finished " + sequenceEncoder);
+		            }
+			
 				
-			
-			
-			
-			
+			}
 		
+			
+	
 		
 	}
 	
+	
+	
 	public void saveRecording(File destination) {
 	
-		if(tempFile !=null && tempFile.exists()) {
-			
-			if(destination !=null) {
-				
-				tempFile.renameTo(destination);
-			}
-		}
+		if (tempFile != null && tempFile.exists()) {
+	        if (destination != null) {
+	            tempFile.renameTo(destination);
+	        }
+	    }
+		
+		
+		
 	}
 	
 	
@@ -160,6 +207,7 @@ public class HandleRecord {
 		Parent root = loader.load();
 		Scene scene = new Scene(root);
 		Stage stage = new Stage();
+		Image icon = new Image("/resources/assets/images/J.png");
 		
 		ScreenRecordController recordController = loader.getController();
 		recordController.setStage(stage);
@@ -174,6 +222,7 @@ public class HandleRecord {
 		scene.setFill(null);
 		stage.setX(x);
 		stage.setY(y);
+		stage.getIcons().add(icon);
 		stage.initStyle(StageStyle.TRANSPARENT);
 		stage.setScene(scene);
 		stage.show();
